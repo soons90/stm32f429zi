@@ -1,0 +1,72 @@
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_ADC1_Init();
+  MX_RTC_Init();
+  MX_USART3_UART_Init();
+  /* USER CODE BEGIN 2 */
+
+  uint8_t uart_buf[30]; // 유아트 버퍼
+  uint32_t adc_value; // adc 값을 받는 변수
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+    /* USER CODE END WHILE */
+	  HAL_ADC_Start(&hadc1); // adc 시작함수
+	  HAL_ADC_PollForConversion(&hadc1, 10); //adc1 폴링모드 타임아웃 10ms
+	  adc_value = HAL_ADC_GetValue(&hadc1)/4; // 12bit로 샘플링 된 값을 10bit로 환산
+	  HAL_ADC_Stop(&hadc1); // adc 종료함수
+
+	  if(adc_value>=0 && adc_value <= 300){ //adc_value가 0~300 일때 red만 점등
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+	  }
+	  else if(adc_value>300 && adc_value <= 600){//adc_value가 301~600 일때 green만 점등
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+	  }
+	  else if(adc_value>600 && adc_value <= 1000){ //adc_value가 601~1000 일때 blue만 점등
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+	  }
+	  else{ // 1001이상 부터 모두 소등
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+	  }
+
+	  memset(uart_buf,0,sizeof(uart_buf));
+	  sprintf(uart_buf,"-->%d\r\n",adc_value); // adc로 받은 adc_value를 유아트로 전송
+	  HAL_UART_Transmit_IT(&huart3, uart_buf, sizeof(uart_buf));
+	  HAL_Delay(1000);
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
